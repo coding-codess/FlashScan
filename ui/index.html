@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FlashScan</title>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <script>if(localStorage.getItem('flashscan-theme')==='dark')document.documentElement.dataset.theme='dark';</script>
+  <script>
+    // Apply dark mode before rendering to prevent light theme flash
+    if (localStorage.getItem('flashscan-theme') === 'dark') {
+      document.documentElement.dataset.theme = 'dark';
+    }
+  </script>
+</head>
+<body>
+<div id="app">
+
+  <!-- ── Titlebar ── -->
+  <div class="titlebar">
+    <span class="appname">flashscan</span>
+    <button class="btn-theme-toggle" id="btn-theme-toggle" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg id="icon-sun" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <svg id="icon-moon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ── Steps ── -->
+  <div class="steps">
+    <div class="step" id="step-0" data-step="0">
+      <div class="snum" id="step-0-num">1</div>
+      <span>scan</span>
+    </div>
+    <span class="sep">›</span>
+    <div class="step" id="step-1" data-step="1">
+      <div class="snum" id="step-1-num">2</div>
+      <span>select files</span>
+    </div>
+    <span class="sep">›</span>
+    <div class="step" id="step-2" data-step="2">
+      <div class="snum" id="step-2-num">3</div>
+      <span>export</span>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN 0 — Scan
+  ════════════════════════════════════════ -->
+  <div class="screen active" id="screen-0">
+    <div class="scan-page">
+      <h1>Select a disk or folder</h1>
+      <p class="subtitle">Enter a path or browse via dialog</p>
+
+      <div class="scan-card">
+
+        <div>
+          <label class="field-label" for="path-input">Path</label>
+          <div class="path-row">
+            <input class="input" id="path-input" type="text" placeholder="Folder path">
+            <button class="btn btn-secondary" id="btn-browse">
+              <!-- folder icon -->
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              browse
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <span class="field-label">Options</span>
+          <div class="opt-row">
+            <div class="depth-wrap">
+              <span class="depth-label">depth</span>
+              <input class="depth-input" id="depth-input" type="number" min="1" max="50" value="10">
+              <span class="tooltip-wrap">
+                <span class="tooltip-icon">?</span>
+                <span class="tooltip-bubble">How deep into the folder structure to scan. A value of 10 covers most folder levers; higher values slow down the scan.</span>
+              </span>
+            </div>
+            <label class="cb-row" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <div class="cb" id="cb-hidden"></div>
+              <span style="font-size:12px;color:var(--text2);white-space:nowrap;">hidden files</span>
+              <span class="tooltip-wrap" style="margin-left:2px;">
+                <span class="tooltip-icon">?</span>
+                <span class="tooltip-bubble">Include files and folders starting with a dot (e.g. .git, .env, .DS_Store).</span>
+              </span>
+            </label>
+            <label class="cb-row" style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <div class="cb" id="cb-system"></div>
+              <span style="font-size:12px;color:var(--text2);white-space:nowrap;">system folders</span>
+              <span class="tooltip-wrap">
+                <span class="tooltip-icon">?</span>
+                <span class="tooltip-bubble">Include OS system folders (e.g. Windows, System32, Recycle Bin). Usually not needed.</span>
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div id="scan-progress-wrap" style="display:none;flex-direction:column;gap:6px;">
+          <div class="progress"><div class="progress-fill animated" id="scan-progress-bar"></div></div>
+          <span class="scan-status" id="scan-status-text">Scanning…</span>
+        </div>
+
+        <div class="scan-footer">
+          <button class="btn btn-primary" id="btn-scan">
+            scan
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN 1 — Select files
+  ════════════════════════════════════════ -->
+  <div class="screen" id="screen-1">
+    <div class="body-layout">
+
+      <!-- Sidebar -->
+      <div class="sidebar">
+
+        <div class="sb-block" style="padding-bottom:8px;">
+          <div class="section-label" style="margin-bottom:8px;">extensions</div>
+          <div style="display:flex;gap:5px;">
+            <button class="btn btn-secondary" id="btn-ext-all" style="padding:3px 10px;font-size:10px;border-radius:20px;">all</button>
+            <button class="btn btn-secondary" id="btn-ext-none" style="padding:3px 10px;font-size:10px;border-radius:20px;">none</button>
+          </div>
+
+        </div>
+
+        <div class="sb-ext-wrap" id="ext-groups">
+          <!-- Dynamically populated via filters.js -->
+        </div>
+
+        <div class="sb-actions">
+          <div class="section-label" style="margin-bottom:6px;">selection</div>
+          <button class="btn-ghost" id="btn-select-all">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            select all
+          </button>
+          <button class="btn-ghost" id="btn-deselect-all">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            deselect all
+          </button>
+          <button class="btn-ghost" id="btn-name-only">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            folder names only
+          </button>
+          <button class="btn-ghost" id="btn-collapse">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            collapse all
+          </button>
+          <button class="btn-ghost" id="btn-expand">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>
+            expand all
+          </button>
+        </div>
+      </div>
+
+      <!-- Main -->
+      <div class="main" id="main">
+
+        <div class="toolbar">
+          <div class="search-row">
+            <div class="search">
+              <span class="ic-muted"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg></span>
+              <input type="text" id="search-input" placeholder="search files…">
+              <button class="search-clear" id="btn-search-clear" title="Clear search" style="display:none;">×</button>
+              <span class="count" id="search-count">0</span>
+            </div>
+            <button class="btn-adv-filter" id="btn-adv-filter" title="Advanced filter">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              </svg>
+              <span>filter</span>
+            </button>
+          </div>
+
+          <!-- Advanced filter -->
+          <div class="adv-filter" id="adv-filter">
+            <div class="adv-filter-grid">
+
+          <!-- File category -->
+              <div class="adv-group">
+                <label class="adv-label">Category</label>
+                <div class="adv-pills" id="adv-category">
+                  <button class="apill active" data-cat="">all</button>
+                  <button class="apill" data-cat="Images">🖼 images</button>
+                  <button class="apill" data-cat="Video">🎬 video</button>
+                  <button class="apill" data-cat="Audio">🎵 audio</button>
+                  <button class="apill" data-cat="Documents">📄 documents</button>
+                  <button class="apill" data-cat="Spreadsheets">📊 spreadsheets</button>
+                  <button class="apill" data-cat="Code">💻 code</button>
+                  <button class="apill" data-cat="Archives">📦 archives</button>
+                  <button class="apill" data-cat="Databases">🗄 databases</button>
+                </div>
+              </div>
+
+              <div class="adv-row-2">
+                <!-- Size -->
+                <div class="adv-group">
+                  <label class="adv-label">Size</label>
+                  <div class="adv-range-row">
+                    <input class="adv-input" type="number" id="adv-size-min" placeholder="from" min="0">
+                    <span class="adv-range-sep">–</span>
+                    <input class="adv-input" type="number" id="adv-size-max" placeholder="to" min="0">
+                    <select class="adv-select" id="adv-size-unit">
+                      <option value="1">B</option>
+                      <option value="1024">KB</option>
+                      <option value="1048576" selected>MB</option>
+                      <option value="1073741824">GB</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Date -->
+                <div class="adv-group">
+                  <label class="adv-label">Date modified</label>
+                  <select class="adv-select adv-date-select" id="adv-date-preset">
+                    <option value="">Any time</option>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="7d">Last 7 days</option>
+                    <option value="30d">Last 30 days</option>
+                    <option value="90d">Last 90 days</option>
+                    <option value="custom">Custom range…</option>
+                  </select>
+                  <div class="adv-cal-wrap" id="adv-date-custom" style="display:none;">
+                    <div class="adv-cal" id="adv-cal">
+                      <div class="adv-cal-nav">
+                        <button class="adv-cal-arrow" id="adv-cal-prev" title="Previous month">‹</button>
+                        <span class="adv-cal-title" id="adv-cal-title"></span>
+                        <button class="adv-cal-arrow" id="adv-cal-next" title="Next month">›</button>
+                      </div>
+                      <div class="adv-cal-grid" id="adv-cal-grid"></div>
+                    </div>
+                    <div class="adv-cal-hint" id="adv-cal-hint">Select start date</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="adv-footer">
+              <span class="adv-active-badge" id="adv-active-badge" style="display:none;">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                filter active
+              </span>
+              <button class="btn-ghost adv-reset" id="btn-adv-reset">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.95"/></svg>
+                reset filters
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-head">
+          <span class="col-th-volume" id="disk-volume-label" style="display:none;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="17" cy="12" r="1" fill="currentColor" stroke="none"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <span id="disk-volume-label-text"></span>
+          </span>
+          <span class="col-th col-th-name" data-sort="name" id="th-name">name</span>
+          <span class="col-th col-th-state">state</span>
+          <span class="col-th col-th-size" data-sort="size" id="th-size">size</span>
+          <span class="col-th col-th-date" data-sort="date" id="th-date">date modified</span>
+        </div>
+
+        <div class="tree" id="tree">
+          <!-- Dynamically populated via tree.js -->
+        </div>
+
+        <div class="statusbar">
+          <span class="stat" id="stat-files">0 files</span>
+          <span class="stat-sep">·</span>
+          <span class="stat" id="stat-size">0 B</span>
+          <span class="stat-sep" id="stat-name-sep" style="display:none;">·</span>
+          <span class="stat" id="stat-name-only" style="display:none;color:var(--text3);"></span>
+          <div class="spacer"></div>
+          <div class="prog-inline">
+            <div class="bar"><div class="fill" id="stat-progress" style="width:0%"></div></div>
+            <span class="pct" id="stat-pct">0 %</span>
+          </div>
+          <button class="btn btn-secondary" id="btn-back-0">← back</button>
+          <button class="btn btn-primary" id="btn-next-2">export →</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════
+       SCREEN 2 — Export
+  ════════════════════════════════════════ -->
+  <div class="screen" id="screen-2">
+    <div class="export-page">
+      <div class="export-card">
+
+        <h2>Export</h2>
+
+        <div>
+          <span class="field-label" style="margin-bottom:8px;">format</span>
+          <div class="fmt-grid" id="fmt-grid">
+            <div class="fmt-cell selected" data-fmt="MD">
+              <div class="fmt-top">
+                <span class="fmt-name">Markdown</span>
+                <div class="fmt-dot on"></div>
+              </div>
+              <div class="fmt-desc">readable text, headings, bullets</div>
+            </div>
+            <div class="fmt-cell" data-fmt="HTML">
+              <div class="fmt-top">
+                <span class="fmt-name">HTML</span>
+                <div class="fmt-dot"></div>
+              </div>
+              <div class="fmt-desc">browser overview, clickable</div>
+            </div>
+            <div class="fmt-cell" data-fmt="JSON">
+              <div class="fmt-top">
+                <span class="fmt-name">JSON</span>
+                <div class="fmt-dot"></div>
+              </div>
+              <div class="fmt-desc">for scripts and data processing</div>
+            </div>
+            <div class="fmt-cell" data-fmt="TXT">
+              <div class="fmt-top">
+                <span class="fmt-name">TXT</span>
+                <div class="fmt-dot"></div>
+              </div>
+              <div class="fmt-desc">maximum compatibility</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label" for="out-input">save to</label>
+          <div class="path-row">
+            <input class="input" id="out-input" type="text" placeholder="Output folder">
+            <button class="btn btn-secondary" id="btn-browse-out">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              browse
+            </button>
+          </div>
+        </div>
+
+        <div class="summary-box" id="export-summary">
+          — no data yet —
+        </div>
+
+        <div class="export-footer">
+          <button class="btn btn-secondary" id="btn-back-1">← back</button>
+          <button class="btn btn-primary" id="btn-export">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            export
+          </button>
+        </div>
+
+        <div id="export-progress-wrap" style="display:none;flex-direction:column;gap:6px;">
+          <div class="progress"><div class="progress-fill" id="export-progress-bar"></div></div>
+          <span class="scan-status" id="export-status-text">Exporting…</span>
+        </div>
+
+        <div class="export-result" id="export-result" style="display:none;"></div>
+
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script src="js/state.js"></script>
+<script src="js/context_menu.js"></script>
+<script src="js/tree.js"></script>
+<script src="js/filters.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

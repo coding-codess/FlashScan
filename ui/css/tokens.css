@@ -1,0 +1,79 @@
+/* ============================================================
+   tokens.css — design tokens for FlashScan
+   This file is loaded in the GUI (pywebview) and also inline-embedded
+   into HTML exports. Change only here — it takes effect everywhere.
+   ============================================================ */
+
+:root {
+  /* Backgrounds */
+  --bg:        #f0ede6;   /* main window background */
+  --card:      #ffffff;   /* white cards, panels */
+  --card2:     #ede9e1;   /* sidebar, alternating table rows */
+  --card3:     #e6e2d8;   /* hover state on card2 */
+
+  /* Text */
+  --text:      #1c1e1a;   /* primary text */
+  --text2:     #5a5d54;   /* secondary text, labels */
+  --text3:     #9a9d94;   /* muted, placeholdery, metadata */
+
+  /* Accent — use only for primary action and focus ring */
+  --accent:       #2d3b2e;
+  --accent-hover: #3a4d3b;
+  --accent-light: #dff0df;
+  --accent-text:  #1a2e1b;
+
+  /* Semantic colours */
+  --amber:     #7a5a1e;
+  --amber-bg:  #fdf3dc;
+
+  /* Borders */
+  --border:    rgba(0, 0, 0, .09);
+  --border2:   rgba(0, 0, 0, .15);
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Courier New', 'Courier', monospace;
+
+  /* Spacing scale (4px base) */
+  --sp-1:  4px;
+  --sp-2:  8px;
+  --sp-3:  12px;
+  --sp-4:  16px;
+  --sp-5:  20px;
+  --sp-6:  24px;
+  --sp-8:  32px;
+  --sp-10: 40px;
+
+  /* Border radius */
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-card: 16px;
+  --r-pill: 20px;
+  --r-btn:  10px;
+
+  /* Transitions */
+  --transition: .12s ease;
+}
+
+/* ── Dark mode ── */
+[data-theme="dark"] {
+  --bg:        #1e1e1e;
+  --card:      #272727;
+  --card2:     #222222;
+  --card3:     #2e2e2e;
+
+  --text:      #d4d0c8;
+  --text2:     #a8a49c;
+  --text3:     #787470;
+
+  --accent:       #5a8a5c;
+  --accent-hover: #6a9e6c;
+  --accent-light: #1a3020;
+  --accent-text:  #8ec98e;
+
+  --amber:     #b8922e;
+  --amber-bg:  #2a1e08;
+
+  --border:    rgba(255, 255, 255, .06);
+  --border2:   rgba(255, 255, 255, .11);
+}
