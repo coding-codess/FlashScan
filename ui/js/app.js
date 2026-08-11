@@ -65,17 +65,23 @@ function initCheckbox(id, stateKey, onChange) {
   const el = document.getElementById(id);
   if (!el) return;
   el.classList.toggle('on', !!State.settings[stateKey]);
-  const toggle = (e) => {
-    // Avoid double-firing when the label click also bubbles through the cb div
-    if (e.target !== el && el.contains(e.target)) return;
+  const toggle = () => {
     const val = !el.classList.contains('on');
     el.classList.toggle('on', val);
     State.settings[stateKey] = val;
     if (onChange) onChange(val);
   };
-  el.addEventListener('click', toggle);
   const label = el.closest('label');
-  if (label) label.addEventListener('click', toggle);
+  if (label) {
+    // Listen only on the label; stop propagation so the click doesn't
+    // also reach the cb div and fire a second toggle.
+    label.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggle();
+    });
+  } else {
+    el.addEventListener('click', toggle);
+  }
 }
 
 /* ── Format cell ── */
