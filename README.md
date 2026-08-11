@@ -2,7 +2,7 @@
 
 FlashScan is a Windows desktop utility for scanning disks and folders and exporting a detailed file list. Built with Python and a vanilla JavaScript frontend using `pywebview`, it lets you filter, select, and review files before generating reports in Markdown, JSON, plain text, or a rich self-contained HTML file.
 
-> **Screenshots coming soon** — see [Features](#features) for a full description of the interface.
+![FlashScan – file tree view](docs/screenshots/tree_view.png)
 
 ---
 
@@ -17,6 +17,9 @@ FlashScan is a Windows desktop utility for scanning disks and folders and export
   - Bulk actions like select/deselect all, and three-state folder-level management (include all, name only, or skip).
 - **Multiple Export Formats**:
   - **HTML**: A self-contained, interactive report with collapsible sections, color-coded file types, and a dark/light theme toggle.
+
+    ![HTML export – dark mode](docs/screenshots/html_export.png)
+
   - **Markdown**: A clean, readable document with structured headings and lists.
   - **JSON**: Structured data ideal for scripting and programmatic use.
   - **TXT**: A simple plain text file for maximum compatibility.
@@ -68,26 +71,24 @@ These shortcuts are active in the file tree on Step 2.
 ### Installation
 
 1. **Clone the repository:**
-   ```bash
+```bash
    git clone https://github.com/coding-codess/flashscan.git
    cd flashscan
-   ```
+```
 
 2. **Create and activate a virtual environment** (recommended):
-   ```bash
+```bash
    python -m venv venv
    venv\Scripts\activate
-   ```
+```
 
 3. **Install dependencies:**
-   ```bash
+```bash
    pip install -r requirements.txt
-   ```
+```
    This installs one package: `pywebview >= 4.4`.
 
 4. **Run the application:**
-   ```bash
+```bash
    python main.py
-   ```
-
-
+```
