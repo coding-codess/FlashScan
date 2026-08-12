@@ -806,3 +806,33 @@
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
+
+/* ── Calendar month/year drill-down grids ── */
+.adv-cal-month,
+.adv-cal-year-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--r-sm);
+  font-size: 11px;
+  padding: 6px 2px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.1s;
+}
+.adv-cal-month:hover,
+.adv-cal-year-cell:hover {
+  background: var(--card2);
+}
+.adv-cal-month.cal-grid-active,
+.adv-cal-year-cell.cal-grid-active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+/* Month grid: 3 columns; year grid: 3 columns */
+.adv-cal-grid:has(.adv-cal-month),
+.adv-cal-grid:has(.adv-cal-year-cell) {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+}

@@ -457,6 +457,7 @@ const AdvFilter = {
   _calFrom:  null,   // Date (selected start) or null
   _calTo:    null,   // Date (selected end) or null
   _calStep:  0,      // 0 = waiting for start, 1 = waiting for end
+  _calView:  'days', // 'days' | 'months' | 'years'
 
   _calInit() {
     const prev = document.getElementById('adv-cal-prev');
@@ -465,15 +466,38 @@ const AdvFilter = {
     if (!grid || grid._calBound) return;
     grid._calBound = true;
 
+    const title = document.getElementById('adv-cal-title');
+    title?.addEventListener('click', () => {
+      if (this._calView === 'days')   { this._calView = 'months'; this._calRenderMonths(); }
+      else if (this._calView === 'months') { this._calView = 'years';  this._calRenderYears(); }
+      // 'years' has no further drill-up
+    });
+
     prev?.addEventListener('click', () => {
-      this._calMonth--;
-      if (this._calMonth < 0) { this._calMonth = 11; this._calYear--; }
-      this._calRenderMonth(this._calYear, this._calMonth);
+      if (this._calView === 'days') {
+        this._calMonth--;
+        if (this._calMonth < 0) { this._calMonth = 11; this._calYear--; }
+        this._calRenderMonth(this._calYear, this._calMonth);
+      } else if (this._calView === 'months') {
+        this._calYear--;
+        this._calRenderMonths();
+      } else {
+        this._calYear -= 12;
+        this._calRenderYears();
+      }
     });
     next?.addEventListener('click', () => {
-      this._calMonth++;
-      if (this._calMonth > 11) { this._calMonth = 0; this._calYear++; }
-      this._calRenderMonth(this._calYear, this._calMonth);
+      if (this._calView === 'days') {
+        this._calMonth++;
+        if (this._calMonth > 11) { this._calMonth = 0; this._calYear++; }
+        this._calRenderMonth(this._calYear, this._calMonth);
+      } else if (this._calView === 'months') {
+        this._calYear++;
+        this._calRenderMonths();
+      } else {
+        this._calYear += 12;
+        this._calRenderYears();
+      }
     });
     grid.addEventListener('click', e => {
       const cell = e.target.closest('.adv-cal-day:not(.empty)');
@@ -481,7 +505,22 @@ const AdvFilter = {
       const d = new Date(parseInt(cell.dataset.ts));
       this._calPickDay(d);
     });
+    grid.addEventListener('click', e => {
+      const mCell = e.target.closest('.adv-cal-month');
+      if (!mCell) return;
+      this._calMonth = parseInt(mCell.dataset.month);
+      this._calView = 'days';
+      this._calRenderMonth(this._calYear, this._calMonth);
+    });
+    grid.addEventListener('click', e => {
+      const yCell = e.target.closest('.adv-cal-year-cell');
+      if (!yCell) return;
+      this._calYear = parseInt(yCell.dataset.year);
+      this._calView = 'months';
+      this._calRenderMonths();
+    });
 
+    this._calView = 'days';
     this._calRenderMonth(this._calYear, this._calMonth);
     this._calUpdateHint();
   },
@@ -521,6 +560,8 @@ const AdvFilter = {
     const DAYS   = ['Mo','Tu','We','Th','Fr','Sa','Su'];
 
     title.textContent = `${MONTHS[month]} ${year}`;
+    title.style.cursor = 'pointer';
+    title.title = 'Click to pick month';
 
     const today    = new Date();
     const todayStr = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
@@ -558,6 +599,37 @@ const AdvFilter = {
     }
 
     grid.innerHTML = html;
+  },
+
+  _calRenderMonths() {
+    const grid  = document.getElementById('adv-cal-grid');
+    const title = document.getElementById('adv-cal-title');
+    if (!grid || !title) return;
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun',
+                    'Jul','Aug','Sep','Oct','Nov','Dec'];
+    title.textContent = `${this._calYear}`;
+    title.style.cursor = 'pointer';
+    title.title = 'Click to pick year';
+    grid.innerHTML = MONTHS.map((m, i) => {
+      const active = i === this._calMonth ? ' cal-grid-active' : '';
+      return `<div class="adv-cal-month${active}" data-month="${i}">${m}</div>`;
+    }).join('');
+  },
+
+  _calRenderYears() {
+    const grid  = document.getElementById('adv-cal-grid');
+    const title = document.getElementById('adv-cal-title');
+    if (!grid || !title) return;
+    // Show a 12-year range centred around current _calYear
+    const start = this._calYear - (this._calYear % 12);
+    title.textContent = `${start} – ${start + 11}`;
+    title.style.cursor = 'default';
+    title.title = '';
+    grid.innerHTML = Array.from({ length: 12 }, (_, i) => {
+      const y = start + i;
+      const active = y === this._calYear ? ' cal-grid-active' : '';
+      return `<div class="adv-cal-year-cell${active}" data-year="${y}">${y}</div>`;
+    }).join('');
   },
 
   _calUpdateHint() {
