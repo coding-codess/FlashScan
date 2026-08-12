@@ -20,10 +20,10 @@ import threading
 from datetime import datetime
 from pathlib import Path
 
+import json
+
 import webview  # pywebview
 
-import scanner
-import exporter
 import settings
 
 _SYSTEM = platform.system()  # 'Windows' | 'Darwin' | 'Linux'
@@ -177,7 +177,7 @@ class API:
 
         params: { path, depth, incl_hidden, incl_system }
         """
-        import json
+        import scanner  # lazy
 
         path        = params.get("path", "")
         depth       = int(params.get("depth", 10))
@@ -222,6 +222,8 @@ class API:
     # ── Export ────────────────────────────────────────────────────
 
     def export(self, params: dict) -> dict:
+        import exporter  # lazy
+
         formats        = params.get("formats", [])
         output_dir     = params.get("output_dir", "")
         folder_states  = params.get("folder_states", {})
@@ -280,6 +282,7 @@ class API:
         }
 
     def _build_meta(self, tree, folder_states, selected_files, params, active_exts=None) -> dict:
+        import exporter  # lazy
         path = params.get("path", "")
         volume_label = params.get("volume_label", "")
         disk_name = (
