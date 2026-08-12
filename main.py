@@ -34,10 +34,15 @@ def main():
         min_size   = (760, 520),
         resizable  = True,
         frameless  = False,  # True = hide native titlebar (GUI has its own drag bar)
+        hidden     = True,
     )
     window_ref.append(window)
 
-    webview.start(debug=False)
+    def on_started():
+        window.maximize()
+        window.show()
+
+    webview.start(on_started, debug=False)
 
 
 if __name__ == "__main__":
