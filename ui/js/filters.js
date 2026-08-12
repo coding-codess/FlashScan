@@ -137,13 +137,16 @@ const Filters = {
 
   _customInputHTML() {
     return `
-      <div id="custom-ext-form" style="display:flex;gap:4px;padding:4px 6px 2px;">
-        <input id="custom-ext-input" type="text" placeholder=".xyz or xyz"
-          style="flex:1;min-width:0;padding:2px 6px;font-size:11px;border-radius:6px;
-                 border:1px solid var(--border);background:var(--bg2);color:var(--text1);outline:none;" />
-        <button id="btn-custom-ext-add" title="Add extension"
-          style="padding:2px 8px;font-size:13px;border-radius:6px;border:1px solid var(--border);
-                 background:var(--accent);color:#fff;cursor:pointer;line-height:1;">+</button>
+      <div id="custom-ext-form" style="display:flex;flex-direction:column;gap:2px;padding:4px 6px 2px;">
+        <div style="display:flex;gap:4px;">
+          <input id="custom-ext-input" type="text" placeholder=".xyz or xyz"
+            style="flex:1;min-width:0;padding:2px 6px;font-size:11px;border-radius:6px;
+                   border:1px solid var(--border);background:var(--bg2);color:var(--text1);outline:none;" />
+          <button id="btn-custom-ext-add" title="Add extension"
+            style="padding:2px 8px;font-size:13px;border-radius:6px;border:1px solid var(--border);
+                   background:var(--accent);color:#fff;cursor:pointer;line-height:1;">+</button>
+        </div>
+        <div id="custom-ext-error" style="display:none;font-size:10px;color:var(--danger,#c0392b);padding:0 2px;"></div>
       </div>`;
   },
 
@@ -262,6 +265,7 @@ const Filters = {
       }
     };
     addBtn.addEventListener('click', doAdd);
+    input.addEventListener('input', () => this._clearExtError());
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); doAdd(); }
     });
@@ -275,9 +279,28 @@ const Filters = {
     return true;
   },
 
+  _showExtError(msg) {
+    const el = document.getElementById('custom-ext-error');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = 'block';
+    clearTimeout(this._extErrorTimer);
+    this._extErrorTimer = setTimeout(() => { el.style.display = 'none'; el.textContent = ''; }, 3000);
+  },
+
+  _clearExtError() {
+    const el = document.getElementById('custom-ext-error');
+    if (el) { el.style.display = 'none'; el.textContent = ''; }
+    clearTimeout(this._extErrorTimer);
+  },
+
   _addCustomExt(ext) {
     if (!ext) return false;
-    if (this._extState.hasOwnProperty(ext) || this._customExts.includes(ext)) return false;
+    if (this._extState.hasOwnProperty(ext) || this._customExts.includes(ext)) {
+      this._showExtError(`.${ext} is already in the list`);
+      return false;
+    }
+    this._clearExtError();
 
     this._customExts.push(ext);
     this._extState[ext] = true;
