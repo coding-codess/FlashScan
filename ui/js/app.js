@@ -231,7 +231,7 @@ function showScanError(msgs) {
   const err = document.createElement('p');
   err.id = 'scan-path-error';
   err.className = 'scan-error-msg';
-  err.innerHTML = list.map((m, i) => (i === 0 ? '<b>Error:</b> ' : '<span style="display:inline-block;width:3.5em"></span>') + m).join('<br>');
+  err.innerHTML = list.map((m, i) => (i === 0 ? '<b>Error:</b> ' : '<span style="display:inline-block;width:3em"></span>') + m).join('<br>');
   const footer = document.querySelector('.scan-footer');
   footer?.insertAdjacentElement('beforebegin', err);
 }
