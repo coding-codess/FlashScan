@@ -74,7 +74,8 @@ const Tree = {
   _dirty:     true,
   _collapsed: new Set(),
   _focusIdx:     -1,   // index of currently focused row (-1 = none)
-  _lastClickIdx: -1,   // index of last clicked row (for Shift+click range)
+  _lastClickIdx:    -1,   // index of last clicked row (for Shift+click range)
+  _lastClickSelect: true, // whether that click selected (true) or deselected (false)
 
   init(containerEl) {
     this._container = containerEl;
@@ -407,8 +408,10 @@ const Tree = {
       if (e.shiftKey && this._lastClickIdx >= 0 && idx >= 0) {
         this._rangeSelect(this._lastClickIdx, idx);
       } else {
-        this._focusIdx     = idx;
-        this._lastClickIdx = idx;
+        this._focusIdx        = idx;
+        this._lastClickIdx    = idx;
+        // Record whether this click is selecting or deselecting (for range select direction)
+        this._lastClickSelect = !State.selectedFiles.has(fileRow.dataset.path);
         this._toggleFile(fileRow.dataset.path, fileRow);
       }
     }
@@ -419,10 +422,8 @@ const Tree = {
   // State shared with the last clicked file.
   _rangeSelect(from, to) {
     const [a, b] = from <= to ? [from, to] : [to, from];
-    const anchor = this._flatRows[from];
-    const select = anchor && anchor.type === 'file'
-      ? !State.selectedFiles.has(anchor.item.path)  // anchor determines direction
-      : true;
+    // Use the direction recorded at the time of the anchor click, not the current state
+    const select = this._lastClickSelect;
     for (let i = a; i <= b; i++) {
       const row = this._flatRows[i];
       if (!row || row.type !== 'file') continue;
@@ -538,7 +539,8 @@ const Tree = {
       const row = rows[this._focusIdx];
       if (!row) return;
       if (row.type === 'file') {
-        this._lastClickIdx = this._focusIdx;
+        this._lastClickIdx    = this._focusIdx;
+        this._lastClickSelect = !State.selectedFiles.has(row.item.path);
         this._toggleFile(row.item.path, null);
       } else if (row.type === 'folder') {
         this._cycleFolderState(row.item.path);
@@ -555,7 +557,8 @@ const Tree = {
       if (row.type === 'folder') {
         this._toggleCollapse(row.item.path);
       } else if (row.type === 'file') {
-        this._lastClickIdx = this._focusIdx;
+        this._lastClickIdx    = this._focusIdx;
+        this._lastClickSelect = !State.selectedFiles.has(row.item.path);
         this._toggleFile(row.item.path, null);
       }
       return;

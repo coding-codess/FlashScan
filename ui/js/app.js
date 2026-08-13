@@ -130,6 +130,7 @@ function initKeyboard() {
       if (el && el.value) {
         el.value = '';
         State.searchQuery = '';
+        Tree.invalidate();
         Tree.render();
         Tree.updateStats();
       }
