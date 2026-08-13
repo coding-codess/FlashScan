@@ -119,25 +119,45 @@ const Tree = {
       matchFiles   = new Set();
       matchFolders = new Set();
 
+      // Pass 1: find folders whose name matches the query.
       for (const item of treeData) {
-        if (item.type !== 'file') continue;
-        if (activeExts) {
-          const ext = getExt(item.name);
-          if (ext && activeExts.has(ext) === false && Filters._extState.hasOwnProperty(ext)) continue;
-        }
-        if (q && !item.name.toLowerCase().includes(q)) continue;
-        if (advFilter && !advFilter.matches(item)) continue;
-        matchFiles.add(item.path);
+        if (q && item.type === 'folder' && item.name.toLowerCase().includes(q))
+          matchFolders.add(item.path);
       }
 
-      if (q) {
-        for (const item of treeData) {
-          if (item.type === 'folder' && item.name.toLowerCase().includes(q))
-            matchFolders.add(item.path);
+      // Pass 2: walk treeData once with a lvl-based stack.
+      const folderMatchStack = []; // { lvl, matched }
+
+      for (const item of treeData) {
+        while (folderMatchStack.length > 0 &&
+               folderMatchStack[folderMatchStack.length - 1].lvl >= item.lvl) {
+          folderMatchStack.pop();
+        }
+
+        if (item.type === 'folder') {
+          const parentMatched = folderMatchStack.length > 0 &&
+                                folderMatchStack[folderMatchStack.length - 1].matched;
+          const selfMatched   = matchFolders.has(item.path);
+          folderMatchStack.push({ lvl: item.lvl, matched: parentMatched || selfMatched });
+        } else {
+          const insideMatchedFolder = folderMatchStack.length > 0 &&
+                                      folderMatchStack[folderMatchStack.length - 1].matched;
+          if (insideMatchedFolder) {
+            matchFiles.add(item.path);
+          } else {
+            if (activeExts) {
+              const ext = getExt(item.name);
+              if (ext && activeExts.has(ext) === false && Filters._extState.hasOwnProperty(ext)) continue;
+            }
+            if (q && !item.name.toLowerCase().includes(q)) continue;
+            if (advFilter && !advFilter.matches(item)) continue;
+            matchFiles.add(item.path);
+          }
         }
       }
 
-      // Ancestors of matching files
+      // Walk up from every matched file to ensure all ancestor folders are visible.
+      // Do NOT break early — always walk to root so deep paths aren't cut off.
       for (const fp of matchFiles) {
         let p = fp;
         for (let attempt = 0; attempt < 50; attempt++) {
@@ -147,10 +167,8 @@ const Tree = {
           }
           if (sep < 0) break;
           let parent = p.slice(0, sep);
-          // Windows drive root: "D:" → "D:\" to match path from scanner
           if (parent.length === 2 && parent[1] === ':') parent += p[sep];
           if (!parent || parent === p) break;
-          if (matchFolders.has(parent)) break;
           matchFolders.add(parent);
           p = parent;
         }
