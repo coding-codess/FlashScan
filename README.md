@@ -6,6 +6,35 @@ FlashScan is a Windows desktop utility for scanning disks and folders and export
 
 ---
 
+## Getting Started
+
+### Prerequisites
+
+- Windows 10 or later
+- Python 3.11+
+- [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) — required by `pywebview` on Windows. Most up-to-date Windows 10/11 systems already have it installed.
+
+### Installation
+
+1. **Clone the repository:**
+```bash
+   git clone https://github.com/coding-codess/flashscan.git
+   cd flashscan
+```
+
+2. **Install dependencies:**
+```bash
+   pip install -r requirements.txt
+```
+   This installs one package: `pywebview >= 4.4`.
+
+3. **Run the application:**
+```bash
+   python main.py
+```
+
+---
+
 ## Features
 
 - **Fast File System Scanning**: Scans directories with configurable depth, with options to include hidden and system files.
@@ -57,38 +86,3 @@ These shortcuts are active in the file tree on Step 2.
 | `Enter` | Toggle file selection; collapse / expand the focused folder |
 | `Shift+Click` | Range-select files |
 | `Enter` *(path input)* | Start scan |
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Windows 10 or later
-- Python 3.11+
-- [Microsoft Edge WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) — required by `pywebview` on Windows. Most up-to-date Windows 10/11 systems already have it installed.
-
-### Installation
-
-1. **Clone the repository:**
-```bash
-   git clone https://github.com/coding-codess/flashscan.git
-   cd flashscan
-```
-
-2. **Create and activate a virtual environment** (recommended):
-```bash
-   python -m venv venv
-   venv\Scripts\activate
-```
-
-3. **Install dependencies:**
-```bash
-   pip install -r requirements.txt
-```
-   This installs one package: `pywebview >= 4.4`.
-
-4. **Run the application:**
-```bash
-   python main.py
-```
