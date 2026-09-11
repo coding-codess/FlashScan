@@ -104,7 +104,8 @@ def iter_export(tree: list, folder_states: dict, selected_files: set,
 
 # ── Markdown ──────────────────────────────────────────────────────
 
-def build_md(tree, folder_states, selected_files, meta, active_exts=None) -> str:
+def build_md(tree, folder_states, selected_files, meta, active_exts=None, *,
+             include_size=True, include_date=True) -> str:
     label = meta.get('volume_label', '')
     title = f"{label} ({meta['disk_name']})" if label else meta['disk_name']
     lines = [
@@ -125,15 +126,16 @@ def build_md(tree, folder_states, selected_files, meta, active_exts=None) -> str
             else:
                 lines.append(f"{indent}- **{name}/{suffix}**")
         else:
-            sz = f" · {fmt_size(size)}" if size else ""
-            dt = f" · {fmt_date(mtime)}" if mtime else ""
+            sz = f" · {fmt_size(size)}" if (include_size and size) else ""
+            dt = f" · {fmt_date(mtime)}" if (include_date and mtime) else ""
             lines.append(f"{indent}- {name}{sz}{dt}")
     return "\n".join(lines)
 
 
 # ── TXT ──────────────────────────────────────────────────────────
 
-def build_txt(tree, folder_states, selected_files, meta, active_exts=None) -> str:
+def build_txt(tree, folder_states, selected_files, meta, active_exts=None, *,
+              include_size=True, include_date=True) -> str:
     label = meta.get('volume_label', '')
     title = f"{label} ({meta['disk_name']})" if label else meta['disk_name']
     lines = [
@@ -150,15 +152,16 @@ def build_txt(tree, folder_states, selected_files, meta, active_exts=None) -> st
             suffix = "  [name only]" if state == "name" else ""
             lines.append(f"\n{indent}[{name}/{suffix}]")
         else:
-            sz = f"  {fmt_size(size):<10}" if size else ""
-            dt = f"  {fmt_date(mtime)}" if mtime else ""
+            sz = f"  {fmt_size(size):<10}" if (include_size and size) else ""
+            dt = f"  {fmt_date(mtime)}" if (include_date and mtime) else ""
             lines.append(f"{indent}  {name}{sz}{dt}")
     return "\n".join(lines)
 
 
 # ── JSON ─────────────────────────────────────────────────────────
 
-def build_json(tree, folder_states, selected_files, meta, active_exts=None) -> str:
+def build_json(tree, folder_states, selected_files, meta, active_exts=None, *,
+               include_size=True, include_date=True) -> str:
     folders: dict = {}
     current: str | None = None
 
@@ -174,13 +177,13 @@ def build_json(tree, folder_states, selected_files, meta, active_exts=None) -> s
                 "files": [],
             }
         elif typ == "file" and current:
-            folders[current]["files"].append({
-                "name":     name,
-                "path":     fpath,
-                "size":     size,
-                "size_fmt": fmt_size(size),
-                "date":     fmt_date(mtime),
-            })
+            entry: dict = {"name": name, "path": fpath}
+            if include_size:
+                entry["size"]     = size
+                entry["size_fmt"] = fmt_size(size)
+            if include_date:
+                entry["date"] = fmt_date(mtime)
+            folders[current]["files"].append(entry)
 
     return json.dumps(
         {"meta": meta, "folders": list(folders.values())},
@@ -222,7 +225,8 @@ def _ext_category(ext: str) -> tuple[str, str]:
 
 # ── HTML ─────────────────────────────────────────────────────────
 
-def build_html(tree, folder_states, selected_files, meta, active_exts=None) -> str:
+def build_html(tree, folder_states, selected_files, meta, active_exts=None, *,
+               include_size=True, include_date=True) -> str:
     css_tokens = _load_export_css()
 
     items = list(iter_export(tree, folder_states, selected_files, active_exts))
@@ -298,7 +302,7 @@ def build_html(tree, folder_states, selected_files, meta, active_exts=None) -> s
                     i += 1
                     continue
                 close_until(lvl)
-                sz_str = fmt_size(size) if size else ""
+                sz_str = fmt_size(size) if (include_size and size) else ""
                 fc = folder_file_counts.get(fpath, 0)
                 fc_html = f"<b>{fc} files</b>" if fc else ""
                 sz_html = _esc(sz_str) if sz_str else ""
@@ -332,8 +336,8 @@ def build_html(tree, folder_states, selected_files, meta, active_exts=None) -> s
             elif typ == "file":
                 close_until(lvl)
                 ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
-                sz_str = fmt_size(size) if size else ""
-                dt_str = _esc(fmt_date(mtime)) if mtime else ""
+                sz_str = fmt_size(size) if (include_size and size) else ""
+                dt_str = _esc(fmt_date(mtime)) if (include_date and mtime) else ""
                 ename = _esc(name)
                 root_cls = " fi-root" if not open_levels else ""
                 parts.append(

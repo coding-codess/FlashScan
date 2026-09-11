@@ -836,3 +836,59 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 4px;
 }
+/* ── Export Advanced Options ──────────────────────────────────── */
+.adv-options-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.adv-options-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 11.5px;
+  padding: 4px 0;
+  text-align: left;
+  user-select: none;
+  width: fit-content;
+  letter-spacing: .01em;
+  transition: color .15s;
+}
+.adv-options-toggle:hover { color: var(--text1); }
+
+.adv-toggle-icon {
+  transition: transform .2s;
+  flex-shrink: 0;
+}
+.adv-options-toggle[aria-expanded="true"] .adv-toggle-icon {
+  transform: rotate(180deg);
+}
+
+.adv-export-body {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 8px 0 4px 16px;
+}
+
+.adv-export-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text2);
+  user-select: none;
+}
+.adv-export-check input[type="checkbox"] {
+  accent-color: var(--accent, #6366f1);
+  width: 13px;
+  height: 13px;
+  cursor: pointer;
+}
+.adv-export-check:hover span { color: var(--text1); }

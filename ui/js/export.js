@@ -9,6 +9,24 @@ const Export = {
   init() {
     document.getElementById('btn-export')?.addEventListener('click', () => this.doExport());
     document.getElementById('btn-browse-out')?.addEventListener('click', () => this.browseOutput());
+
+    // Advanced options toggle
+    const toggle = document.getElementById('adv-export-toggle');
+    const body   = document.getElementById('adv-export-body');
+    if (toggle && body) {
+      toggle.addEventListener('click', () => {
+        const open = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', String(!open));
+        body.style.display = open ? 'none' : 'flex';
+      });
+    }
+  },
+
+  _advOptions() {
+    return {
+      include_size: document.getElementById('chk-include-size')?.checked ?? true,
+      include_date: document.getElementById('chk-include-date')?.checked ?? true,
+    };
   },
 
   /** Updates the summary box when switching to screen 2 */
@@ -89,6 +107,7 @@ const Export = {
       if (exportResult) exportResult.style.display = 'none';
 
       // Build payload for Python
+      const adv = this._advOptions();
       const payload = {
         formats:        fmts,
         output_dir:     outDir,
@@ -98,6 +117,8 @@ const Export = {
         folder_states:  State.folderStates,
         selected_files: [...State.selectedFiles],
         active_exts:    State.activeExts ? [...State.activeExts] : null,
+        include_size:   adv.include_size,
+        include_date:   adv.include_date,
       };
 
       const result = await window.pywebview.api.export(payload);

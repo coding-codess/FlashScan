@@ -231,6 +231,8 @@ class API:
         # active_exts: null = all, list = allowed extensions
         raw_exts   = params.get("active_exts", None)
         active_exts = set(raw_exts) if raw_exts is not None else None
+        include_size = params.get("include_size", True)
+        include_date = params.get("include_date", True)
 
         out_path = Path(output_dir)
         if not out_path.exists():
@@ -264,7 +266,8 @@ class API:
             fname    = f"LIST_{meta['disk_name']}_{ts}{exts[fmt]}"
             out_file = out_path / fname
             try:
-                content = builder(tree, folder_states, selected_files, meta, active_exts)
+                content = builder(tree, folder_states, selected_files, meta, active_exts,
+                                 include_size=include_size, include_date=include_date)
                 out_file.write_text(content, encoding="utf-8")
                 saved.append(str(out_file))
             except Exception as e:
