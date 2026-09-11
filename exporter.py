@@ -250,6 +250,39 @@ def build_html(tree, folder_states, selected_files, meta, active_exts=None) -> s
                 for _, fp in folder_stack:
                     folder_file_counts[fp] = folder_file_counts.get(fp, 0) + 1
 
+        # Reorder: within each folder's children, folders before files
+        def reorder(items: list) -> list:
+            """Recursively reorders a flat item list so folders come before files
+            at each level, while keeping each folder's subtree intact."""
+            if not items:
+                return []
+            base_lvl = items[0][0]
+            runs = []   # each run: (item, [descendants])
+            i = 0
+            while i < len(items):
+                item = items[i]
+                item_lvl = item[0]
+                i += 1
+                children = []
+                while i < len(items) and items[i][0] > item_lvl:
+                    children.append(items[i])
+                    i += 1
+                runs.append((item, reorder(children)))
+
+            folder_runs = [(it, ch) for it, ch in runs if it[1] == "folder"]
+            file_runs   = [(it, ch) for it, ch in runs if it[1] == "file"]
+
+            result = []
+            for it, ch in folder_runs:
+                result.append(it)
+                result.extend(ch)
+            for it, ch in file_runs:
+                result.append(it)
+                result.extend(ch)
+            return result
+
+        items = reorder(items)
+
         def close_until(target_lvl: int) -> None:
             while open_levels and open_levels[-1] >= target_lvl:
                 parts.append('</div>')      # close .fc
@@ -276,7 +309,7 @@ def build_html(tree, folder_states, selected_files, meta, active_exts=None) -> s
                     parts.append(
                         f'<div class="folder">'
                         f'<div class="fh fh-nameonly">'
-                        f'<span class="farr">▸</span>'
+                        f'<span class="farr"></span>'
                         f'<span class="fname fname-muted" title="{ename}/">{ename}/</span>'
                         f'<span class="fmeta">name only{f" · {_esc(sz_str)}" if sz_str else ""}</span>'
                         f'</div>'
@@ -297,12 +330,14 @@ def build_html(tree, folder_states, selected_files, meta, active_exts=None) -> s
                     open_levels.append(lvl)
 
             elif typ == "file":
+                close_until(lvl)
                 ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
                 sz_str = fmt_size(size) if size else ""
                 dt_str = _esc(fmt_date(mtime)) if mtime else ""
                 ename = _esc(name)
+                root_cls = " fi-root" if not open_levels else ""
                 parts.append(
-                    f'<div class="fi">'
+                    f'<div class="fi{root_cls}">'
                     f'{dot(ext)}'
                     f'<span class="fn" title="{ename}">{ename}</span>'
                     f'<span class="fsz">{sz_str}</span>'
@@ -329,7 +364,7 @@ def build_html(tree, folder_states, selected_files, meta, active_exts=None) -> s
 
     name_only = meta.get("name_only_count", 0)
     name_only_stat = (
-        f'<div class="stat"><div class="sn">{name_only}</div><div class="sl">name only</div></div>'
+        f'<span class="meta-sep">·</span><span class="meta-stat"><span class="meta-n">{name_only}</span> name only</span>'
         if name_only else ""
     )
 
@@ -362,25 +397,27 @@ def build_html(tree, folder_states, selected_files, meta, active_exts=None) -> s
   <div class="hdr">
     <div class="hdr-l">
       <div class="disk-name">{e_display_name}</div>
-      <div class="disk-path">{e_path}{f' · {e_display_sub}' if display_sub else ''}</div>
+      <div class="disk-path">{e_path}{f' — {e_display_sub}' if display_sub else ''}</div>
       <div class="disk-date">scanned {e_timestamp}</div>
     </div>
     <div class="hdr-r">
-      <button id="btn-theme" class="tb-btn tb-btn-theme" onclick="toggleTheme()">\u263e dark</button>
       <div class="watermark">flashscan</div>
     </div>
   </div>
 
-  <div class="stats">
-    <div class="stat"><div class="sn">{meta['file_count']}</div><div class="sl">files</div></div>
-    <div class="stat"><div class="sn">{e_total_size}</div><div class="sl">total</div></div>
-    <div class="stat"><div class="sn">{meta['folder_count']}</div><div class="sl">folders</div></div>
+  <div class="meta-row">
+    <span class="meta-stat"><span class="meta-n">{meta['file_count']}</span> files</span>
+    <span class="meta-sep">·</span>
+    <span class="meta-stat"><span class="meta-n">{e_total_size}</span></span>
+    <span class="meta-sep">·</span>
+    <span class="meta-stat"><span class="meta-n">{meta['folder_count']}</span> folders</span>
     {name_only_stat}
   </div>
 
   <div class="tree-toolbar">
     <button onclick="document.querySelectorAll('.tree details').forEach(d=>d.open=true)" class="tb-btn">expand all</button>
     <button onclick="document.querySelectorAll('.tree details').forEach(d=>d.open=false)" class="tb-btn">collapse all</button>
+    <button id="btn-theme" class="tb-btn tb-btn-theme" onclick="toggleTheme()">\u263e dark</button>
   </div>
 
   <div class="tree">
@@ -414,90 +451,96 @@ _EXPORT_CSS = """
 /* ── Export-specific tokens (light) ── */
 :root {
   --ex-bg:       #fafaf8;
-  --ex-surface:  #f5f3ee;
   --ex-hover:    #f0ede6;
-  --ex-border:   #e0ddd6;
+  --ex-border:   #e4e1d9;
   --ex-border2:  #dddad2;
   --ex-text:     #1a1a18;
-  --ex-text2:    #444;
-  --ex-muted:    #888;
-  --ex-subtle:   #bbb;
-  --ex-faint:    #ccc;
+  --ex-text2:    #555;
+  --ex-muted:    #999;
+  --ex-subtle:   #c4c1b8;
+  --ex-faint:    #d8d5cc;
 }
 [data-theme="dark"] {
-  --ex-bg:       #1e1e1e;
-  --ex-surface:  #2a2a2a;
-  --ex-hover:    #323232;
-  --ex-border:   rgba(255,255,255,.08);
-  --ex-border2:  rgba(255,255,255,.06);
-  --ex-text:     #d4d0c8;
-  --ex-text2:    #b0aca4;
-  --ex-muted:    #787470;
-  --ex-subtle:   #555;
-  --ex-faint:    #444;
+  --ex-bg:       #1c1c1c;
+  --ex-hover:    #2a2a2a;
+  --ex-border:   rgba(255,255,255,.07);
+  --ex-border2:  rgba(255,255,255,.05);
+  --ex-text:     #d0ccc4;
+  --ex-text2:    #a0a09a;
+  --ex-muted:    #6a6a64;
+  --ex-subtle:   #484844;
+  --ex-faint:    rgba(255,255,255,.04);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: system-ui, -apple-system, sans-serif; background: var(--ex-bg); color: var(--ex-text); font-size: 13px; transition: background .2s, color .2s; }
-.page { max-width: 780px; margin: 0 auto; padding: 36px 24px 64px; }
+.page { max-width: 800px; margin: 0 auto; padding: 48px 28px 80px; }
 
+/* ── Header ── */
 .hdr { display: flex; justify-content: space-between; align-items: flex-start;
-       padding-bottom: 14px; border-bottom: 1px solid var(--ex-border); margin-bottom: 16px; }
-.hdr-l { display: flex; flex-direction: column; gap: 3px; }
-.hdr-r { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-.disk-name { font-size: 22px; font-weight: 700; letter-spacing: -.03em;
-             color: var(--ex-text); font-family: 'Courier New', monospace; }
-.disk-path { font-size: 11px; color: var(--ex-text2); font-family: 'Courier New', monospace; }
-.disk-date { font-size: 11px; color: var(--ex-muted); margin-top: 2px; }
-.watermark { font-size: 10px; color: var(--ex-subtle); letter-spacing: .08em; text-transform: uppercase; }
+       padding-bottom: 18px; border-bottom: 1px solid var(--ex-border); margin-bottom: 20px; }
+.hdr-l { display: flex; flex-direction: column; gap: 4px; }
+.hdr-r { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.disk-name { font-size: 24px; font-weight: 700; letter-spacing: -.03em; color: var(--ex-text); }
+.disk-path { font-size: 11.5px; color: var(--ex-muted); font-family: 'Courier New', monospace; margin-top: 1px; }
+.disk-date { font-size: 11px; color: var(--ex-subtle); }
+.watermark { font-size: 10px; color: var(--ex-subtle); letter-spacing: .06em; }
 
-.stats { display: flex; gap: 8px; margin-bottom: 20px; }
-.stat { flex: 1; padding: 11px 14px; border: 1px solid var(--ex-border); border-radius: 4px; }
-.sn { font-size: 19px; font-weight: 700; letter-spacing: -.02em; font-family: 'Courier New', monospace; }
-.sl { font-size: 11px; color: var(--ex-muted); margin-top: 3px; }
+/* ── Meta row (replaces stat cards) ── */
+.meta-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 24px; flex-wrap: wrap; }
+.meta-stat { font-size: 13px; color: var(--ex-muted); }
+.meta-n { font-size: 15px; font-weight: 600; color: var(--ex-text2); letter-spacing: -.01em; }
+.meta-sep { color: var(--ex-subtle); font-size: 12px; }
 
-.folder { margin-bottom: 2px; }
-.fh { display: flex; align-items: baseline; padding: 5px 4px; gap: 5px;
+/* ── Toolbar (text-links, no button chrome) ── */
+.tree-toolbar { display: flex; gap: 14px; margin-bottom: 12px; }
+.tb-btn { font-size: 11.5px; background: none; border: none; padding: 0;
+          cursor: pointer; font-family: inherit; color: var(--ex-muted);
+          text-decoration: underline; text-underline-offset: 2px;
+          text-decoration-color: var(--ex-subtle); }
+.tb-btn:hover { color: var(--ex-text2); text-decoration-color: var(--ex-muted); }
+.tb-btn-theme { text-decoration: none; font-size: 11px; color: var(--ex-subtle); }
+.tb-btn-theme:hover { color: var(--ex-muted); }
+
+/* ── Tree ── */
+.folder { margin-bottom: 1px; }
+.fh { display: flex; align-items: baseline; padding: 5px 4px; gap: 6px;
       list-style: none; cursor: pointer; user-select: none; border-radius: 3px; }
 .fh:hover { background: var(--ex-hover); }
 .fh::-webkit-details-marker { display: none; }
 .fh-nameonly { cursor: default; }
 .fh-nameonly .fname { color: var(--ex-subtle); font-weight: 400; }
 .fh-nameonly .fmeta { font-style: italic; }
-.farr { font-size: 13px; color: var(--ex-subtle); flex-shrink: 0; width: 14px;
+.farr { font-size: 14px; color: var(--ex-subtle); flex-shrink: 0; width: 16px;
         display: inline-block; transition: transform .15s; }
 .farr::before { content: '▸'; }
 details[open] > .fh > .farr { transform: rotate(90deg); }
 details:not([open]) > .fh > .farr { transform: rotate(0deg); }
-.fname { font-size: 13px; font-weight: 600; color: var(--ex-text);
-         font-family: 'Courier New', monospace; flex: 1;
+.fname { font-size: 13.5px; font-weight: 600; color: var(--ex-text); flex: 1;
          min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fname-muted { color: var(--ex-subtle); font-weight: 400; }
-.fmeta { font-size: 11px; color: var(--ex-subtle); flex-shrink: 0; white-space: nowrap; }
-.fc { margin-left: 9px; padding-left: 12px; border-left: 1px solid var(--ex-border2); }
+.fmeta { font-size: 11px; color: var(--ex-subtle); flex-shrink: 0; white-space: nowrap; min-width: 120px; text-align: right; }
+.fc { margin-left: 10px; padding-left: 14px; border-left: 1px solid var(--ex-faint); }
 
-.fc > .fi:nth-child(even) { background: var(--ex-surface); }
-.fi { display: flex; align-items: center; padding: 3px 4px; gap: 0; border-radius: 3px; }
+/* Files — same vertical rhythm as folders, hover only */
+.fi { display: flex; align-items: center; padding: 5px 4px; gap: 0; border-radius: 3px; }
+.fi-root { padding-left: 22px; }
 .fi:hover { background: var(--ex-hover); }
-.dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-right: 8px; }
-.fn { font-size: 12px; color: var(--ex-text2); font-family: 'Courier New', monospace;
+.dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-right: 9px; opacity: .8; }
+.fn { font-size: 12.5px; color: var(--ex-text2); font-family: 'Courier New', monospace;
       flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fsz { font-size: 11px; color: var(--ex-subtle); margin-left: 10px; flex-shrink: 0; white-space: nowrap; }
-.fdt { font-size: 11px; font-weight: 700; color: var(--ex-text2); margin-left: 8px; flex-shrink: 0; white-space: nowrap; }
+.fsz { font-size: 11px; color: var(--ex-subtle); margin-left: 12px; flex-shrink: 0; white-space: nowrap; min-width: 72px; text-align: right; }
+.fdt { font-size: 11px; color: var(--ex-muted); margin-left: 8px; flex-shrink: 0; white-space: nowrap; min-width: 80px; text-align: right; }
 
-.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 20px;
+/* ── Legend ── */
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 22px;
           padding-top: 14px; border-top: 1px solid var(--ex-border); }
 .leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ex-muted); }
 
-.tree-toolbar { display: flex; gap: 8px; margin-bottom: 10px; }
-.tb-btn { font-size: 11px; background: none; border: 1px solid var(--ex-border2);
-          border-radius: 3px; padding: 3px 9px; cursor: pointer; font-family: inherit; color: var(--ex-muted); }
-.tb-btn:hover { background: var(--ex-hover); color: var(--ex-text2); border-color: var(--ex-subtle); }
-.tb-btn-theme { font-size: 10px; padding: 2px 8px; }
-
-.footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--ex-border);
-          display: flex; justify-content: space-between; font-size: 10px;
-          color: var(--ex-faint); letter-spacing: .04em; text-transform: uppercase; }
+/* ── Footer ── */
+.footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--ex-border);
+          display: flex; justify-content: space-between; font-size: 10.5px;
+          color: var(--ex-subtle); }
 """
 
 _THEME_JS = """
