@@ -885,12 +885,6 @@
   color: var(--text2);
   user-select: none;
 }
-.adv-export-check input[type="checkbox"] {
-  accent-color: var(--accent, #6366f1);
-  width: 13px;
-  height: 13px;
-  cursor: pointer;
-}
 .adv-export-check:hover span { color: var(--text1); }
 
 /* ── Summary inline filename editing ─────────────────────────── */

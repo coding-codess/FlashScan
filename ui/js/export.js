@@ -23,6 +23,17 @@ const Export = {
         body.style.display = open ? 'none' : 'flex';
       });
     }
+
+    // Custom checkbox toggles
+    ['chk-include-size', 'chk-include-date'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('click', () => {
+        const checked = el.dataset.checked !== 'false';
+        el.dataset.checked = String(!checked);
+        el.querySelector('.cb').classList.toggle('on', !checked);
+      });
+    });
   },
 
   _defaultStem(fmt) {
@@ -50,8 +61,8 @@ const Export = {
 
   _advOptions() {
     return {
-      include_size: document.getElementById('chk-include-size')?.checked ?? true,
-      include_date: document.getElementById('chk-include-date')?.checked ?? true,
+      include_size: document.getElementById('chk-include-size')?.dataset.checked !== 'false',
+      include_date: document.getElementById('chk-include-date')?.dataset.checked !== 'false',
     };
   },
 

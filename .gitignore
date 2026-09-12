@@ -61,3 +61,7 @@ settings.local.py
 # Logs
 *.log
 logs/
+
+# Claude
+
+CLAUDE.md
