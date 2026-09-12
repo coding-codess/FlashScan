@@ -892,3 +892,80 @@
   cursor: pointer;
 }
 .adv-export-check:hover span { color: var(--text1); }
+
+/* ── Summary inline filename editing ─────────────────────────── */
+.summary-output-label {
+  color: var(--text3);
+}
+
+.summary-fnames {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 1px;
+}
+
+.summary-fname-row {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Text mode — clickable */
+.summary-fname-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: text;
+  line-height: 1.5;
+}
+
+.summary-fname-name {
+  border-bottom: 1px dashed transparent;
+  transition: border-color .15s;
+}
+
+.summary-fname-text:hover .summary-fname-name {
+  border-bottom-color: var(--text3);
+}
+
+.summary-fname-ext {
+  font-weight: 400;
+  color: var(--text3);
+}
+
+.summary-fname-pencil {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text2);
+  flex-shrink: 0;
+}
+
+/* Edit mode */
+.summary-fname-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.summary-fname-input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--accent, #6366f1);
+  outline: none;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--text1);
+  font-family: inherit;
+  padding: 0;
+  min-width: 4ch;
+  width: auto;
+}
+
+.summary-fname-ext-static {
+  font-size: inherit;
+  color: var(--text3);
+  user-select: none;
+  white-space: nowrap;
+}

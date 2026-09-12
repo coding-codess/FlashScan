@@ -253,6 +253,7 @@ class API:
             "HTML": exporter.build_html,
         }
         exts = {"MD": ".md", "TXT": ".txt", "JSON": ".json", "HTML": ".html"}
+        custom_names = params.get("custom_names", {})
 
         ts    = datetime.now().strftime("%Y-%m-%d_%H-%M")
         saved = []
@@ -263,7 +264,8 @@ class API:
             if not builder:
                 errors.append(f"Unknown format: {fmt}")
                 continue
-            fname    = f"LIST_{meta['disk_name']}_{ts}{exts[fmt]}"
+            stem     = custom_names.get(fmt) or f"LIST_{meta['disk_name']}_{ts}"
+            fname    = f"{stem}{exts[fmt]}"
             out_file = out_path / fname
             try:
                 content = builder(tree, folder_states, selected_files, meta, active_exts,

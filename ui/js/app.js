@@ -45,7 +45,7 @@ const Nav = {
     });
 
     // Side effects on transition
-    if (n === 2) Export.updateSummary();
+    if (n === 2) { Export.updateSummary(); Export.renderNameChips(); }
   },
 
   unlock(n) {
@@ -92,6 +92,7 @@ function initFmtGrid() {
       const dot = cell.querySelector('.fmt-dot');
       if (dot) dot.classList.toggle('on', cell.classList.contains('selected'));
       Export.updateSummary();
+      Export.renderNameChips();
       const fmts = [...document.querySelectorAll('.fmt-cell.selected')].map(c => c.dataset.fmt).filter(Boolean);
       window.pywebview?.api?.save_settings({ lastFormats: fmts });
     });
@@ -214,6 +215,7 @@ window.addEventListener('DOMContentLoaded', async () => {
           const dot = cell.querySelector('.fmt-dot');
           if (dot) dot.classList.toggle('on', selected);
         });
+        Export.renderNameChips();
       }
     }
   } catch (e) {

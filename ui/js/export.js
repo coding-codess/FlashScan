@@ -6,6 +6,9 @@
  */
 
 const Export = {
+  // stem overrides keyed by format: { MD: "my_report", HTML: "report" }
+  _nameOverrides: {},
+
   init() {
     document.getElementById('btn-export')?.addEventListener('click', () => this.doExport());
     document.getElementById('btn-browse-out')?.addEventListener('click', () => this.browseOutput());
@@ -22,41 +25,19 @@ const Export = {
     }
   },
 
-  _advOptions() {
-    return {
-      include_size: document.getElementById('chk-include-size')?.checked ?? true,
-      include_date: document.getElementById('chk-include-date')?.checked ?? true,
-    };
+  _defaultStem(fmt) {
+    const ts       = new Date().toISOString().slice(0, 10);
+    const diskName = this._diskName();
+    return `LIST_${diskName}_${ts}`;
   },
 
-  /** Updates the summary box when switching to screen 2 */
-  updateSummary() {
-    const { count, size, nameOnly } = State.exportStats();
-    const fmts   = this._selectedFormats();
-    const outPath = document.getElementById('out-input')?.value || '';
-    const diskName = this._diskName();
-
-    let parts = [`<strong>${count} files</strong>`];
-    if (size) parts.push(fmtSize(size));
-    if (nameOnly) parts.push(`${nameOnly} folders name only`);
-    if (fmts.length) parts.push(`format: <strong>${fmts.join(', ')}</strong>`);
-    else             parts.push('<span class="export-warn">⚠ no format selected</span>');
-
-    const ts   = new Date().toISOString().slice(0,10).replace(/-/g, '-');
-    const fnamesHtml = fmts.length
-      ? fmts.map(f => `<strong style="color:var(--text2)">LIST_${diskName}_${ts}.${f.toLowerCase()}</strong>`).join('<br>')
-      : '—';
-
-    const el = document.getElementById('export-summary');
-    if (el) {
-      el.innerHTML = parts.join(' · ')
-        + `<br><span style="color:var(--text3)">output:<br>${fnamesHtml}</span>`;
-    }
+  _sanitizeStem(raw) {
+    return raw.replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, ' ').trim();
   },
 
   _diskName() {
     if (State.volumeLabel) return State.volumeLabel;
-    const path = document.getElementById('path-input')?.value || '';
+    const path  = document.getElementById('path-input')?.value || '';
     const parts = path.replace(/\\/g, '/').split('/').filter(Boolean);
     return parts[parts.length - 1] || 'DISK';
   },
@@ -66,6 +47,109 @@ const Export = {
       .map(el => el.dataset.fmt)
       .filter(Boolean);
   },
+
+  _advOptions() {
+    return {
+      include_size: document.getElementById('chk-include-size')?.checked ?? true,
+      include_date: document.getElementById('chk-include-date')?.checked ?? true,
+    };
+  },
+
+  /** Returns { MD: "my_stem", HTML: "other_stem", … } for selected formats. */
+  _customNames() {
+    const names = {};
+    this._selectedFormats().forEach(fmt => {
+      const stem  = this._nameOverrides[fmt];
+      const clean = stem ? this._sanitizeStem(stem) : '';
+      names[fmt]  = clean || this._defaultStem(fmt);
+    });
+    return names;
+  },
+
+  // ── Summary box ────────────────────────────────────────────────
+
+  /** Updates the summary box when switching to screen 2 */
+  updateSummary() {
+    const { count, size, nameOnly } = State.exportStats();
+    const fmts = this._selectedFormats();
+
+    let parts = [`<strong>${count} files</strong>`];
+    if (size)     parts.push(fmtSize(size));
+    if (nameOnly) parts.push(`${nameOnly} folders name only`);
+    if (fmts.length) parts.push(`format: <strong>${fmts.join(', ')}</strong>`);
+    else             parts.push('<span class="export-warn">⚠ no format selected</span>');
+
+    const extMap = { MD: 'md', HTML: 'html', JSON: 'json', TXT: 'txt' };
+
+    const fnamesHtml = fmts.length
+      ? '<span class="summary-fnames">' + fmts.map(fmt => {
+          const stem = this._nameOverrides[fmt] || this._defaultStem(fmt);
+          const ext  = extMap[fmt] || fmt.toLowerCase();
+          return `<span class="summary-fname-row" data-fmt="${fmt}">` +
+            `<span class="summary-fname-text">` +
+              `<span class="summary-fname-pencil"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>` +
+              `<span class="summary-fname-name">${stem}<span class="summary-fname-ext">.${ext}</span></span>` +
+            `</span>` +
+            `<span class="summary-fname-edit" style="display:none;">` +
+              `<input class="summary-fname-input" value="${stem}" spellcheck="false" data-fmt="${fmt}" data-ext="${ext}">` +
+              `<span class="summary-fname-ext-static">.${ext}</span>` +
+            `</span>` +
+          `</span>`;
+        }).join('') + '</span>'
+      : '—';
+
+    const el = document.getElementById('export-summary');
+    if (!el) return;
+
+    el.innerHTML = parts.join(' · ')
+      + `<br><span class="summary-output-label">output:</span><br>${fnamesHtml}`;
+
+    // Wire up inline editing on each filename row
+    el.querySelectorAll('.summary-fname-row').forEach(row => {
+      const fmt      = row.dataset.fmt;
+      const textEl   = row.querySelector('.summary-fname-text');
+      const editEl   = row.querySelector('.summary-fname-edit');
+      const input    = row.querySelector('.summary-fname-input');
+      const ext      = input?.dataset.ext || '';
+
+      const enterEdit = () => {
+        textEl.style.display = 'none';
+        editEl.style.display = 'inline-flex';
+        input.style.width = Math.max(input.value.length, 4) + 'ch';
+        input.focus();
+        input.select();
+      };
+
+      const commitEdit = () => {
+        const clean = this._sanitizeStem(input.value) || this._defaultStem(fmt);
+        input.value = clean;
+        input.style.width = Math.max(clean.length, 4) + 'ch';
+        this._nameOverrides[fmt] = clean;
+        // Update the text label without re-rendering the whole summary
+        textEl.innerHTML = `<span class="summary-fname-pencil"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span><span class="summary-fname-name">${clean}<span class="summary-fname-ext">.${ext}</span></span>`;
+        editEl.style.display = 'none';
+        textEl.style.display = '';
+      };
+
+      textEl.addEventListener('click', enterEdit);
+      input.addEventListener('input', () => {
+        input.style.width = Math.max(input.value.length, 4) + 'ch';
+      });
+      input.addEventListener('blur', commitEdit);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+        if (e.key === 'Escape') {
+          input.value = this._nameOverrides[fmt] || this._defaultStem(fmt);
+          input.blur();
+        }
+      });
+    });
+  },
+
+  // ── Stub kept for callers in app.js ───────────────────────────
+  renderNameChips() {},
+
+  // ── Browse / Export ───────────────────────────────────────────
 
   async browseOutput() {
     try {
@@ -106,7 +190,6 @@ const Export = {
       const exportResult = document.getElementById('export-result');
       if (exportResult) exportResult.style.display = 'none';
 
-      // Build payload for Python
       const adv = this._advOptions();
       const payload = {
         formats:        fmts,
@@ -119,13 +202,13 @@ const Export = {
         active_exts:    State.activeExts ? [...State.activeExts] : null,
         include_size:   adv.include_size,
         include_date:   adv.include_date,
+        custom_names:   this._customNames(),
       };
 
       const result = await window.pywebview.api.export(payload);
 
       if (result.success) {
-        const saved = result.saved || [];
-        this._showResultFiles(saved, result.errors || []);
+        this._showResultFiles(result.saved || [], result.errors || []);
       } else {
         this._showResult('Error: ' + (result.error || 'unknown error'), 'error');
       }
@@ -170,19 +253,13 @@ const Export = {
     }${errHtml}<div class="export-new-scan-row"><button class="btn btn-secondary" id="btn-new-scan">← new scan</button></div>`;
 
     el.querySelectorAll('.export-file-link, .export-file-open').forEach(a => {
-      a.addEventListener('click', () => {
-        window.pywebview.api.open_path(a.dataset.path);
-      });
+      a.addEventListener('click', () => window.pywebview.api.open_path(a.dataset.path));
     });
     el.querySelectorAll('.export-file-reveal').forEach(a => {
-      a.addEventListener('click', () => {
-        window.pywebview.api.reveal_in_explorer(a.dataset.path);
-      });
+      a.addEventListener('click', () => window.pywebview.api.reveal_in_explorer(a.dataset.path));
     });
 
-    document.getElementById('btn-new-scan')?.addEventListener('click', () => {
-      Nav.reset();
-    });
+    document.getElementById('btn-new-scan')?.addEventListener('click', () => Nav.reset());
   },
 };
 
